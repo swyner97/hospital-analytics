@@ -97,91 +97,159 @@ def aggregate_te(df: pd.DataFrame) -> pd.DataFrame:
     return aggregated
 
 
-# This function creates a bridge table to link mortality measures with their corresponding footnotes
-def build_bridge_mort_footnote(df: pd.DataFrame) -> pd.DataFrame:
-    bridge = (
-        df[["Facility ID", "MORT Group Footnote"]]
-        .copy()
-        .astype("string")
-        .rename(
-            columns={
-                "Facility ID": "facility_id",
-                "MORT Group Footnote": "footnote_code",
-            }
-        )
+def build_bridge_footnote(
+    df: pd.DataFrame,
+    footnote_col: str,
+) -> pd.DataFrame:
+    """
+    Build a bridge table with one row per facility-footnote relationship.
+    """
+    bridge = df[["Facility ID", footnote_col]].copy()
+
+    bridge = bridge.rename(
+        columns={
+            "Facility ID": "facility_id",
+            footnote_col: "footnote_code",
+        }
     )
+
+    bridge["facility_id"] = pd.to_numeric(
+        bridge["facility_id"], errors="coerce"
+    ).astype("Int64")
     bridge["footnote_code"] = (
-        bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
+        bridge["footnote_code"]
+        .astype("string")
+        .str.replace(r"\.0$", "", regex=True)
+        .str.strip()
     )
+
+    bridge = bridge.dropna(subset=["facility_id", "footnote_code"])
+    bridge = bridge.drop_duplicates(subset=["facility_id", "footnote_code"])
+
     return bridge
+
+
+def build_bridge_mort_footnote(df: pd.DataFrame) -> pd.DataFrame:
+    return build_bridge_footnote(df, "MORT Group Footnote")
+
 
 def build_bridge_safety_footnote(df: pd.DataFrame) -> pd.DataFrame:
-    bridge = (
-        df[["Facility ID", "Safety Group Footnote"]]
-        .copy()
-        .astype("string")
-        .rename(
-            columns={
-                "Facility ID": "facility_id",
-                "Safety Group Footnote": "footnote_code",
-            }
-        )
-    )
-    bridge["footnote_code"] = (
-        bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
-    )
-    return bridge
+    return build_bridge_footnote(df, "Safety Group Footnote")
+
 
 def build_bridge_readm_footnote(df: pd.DataFrame) -> pd.DataFrame:
-    bridge = (
-        df[["Facility ID", "READM Group Footnote"]]
-        .copy()
-        .astype("string")
-        .rename(
-            columns={
-                "Facility ID": "facility_id",
-                "READM Group Footnote": "footnote_code",
-            }
-        )
-    )
-    bridge["footnote_code"] = (
-        bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
-    )
-    return bridge
+    return build_bridge_footnote(df, "READM Group Footnote")
+
 
 def build_bridge_ptexp_footnote(df: pd.DataFrame) -> pd.DataFrame:
-    bridge = (
-        df[["Facility ID", "Pt Exp Group Footnote"]]
-        .copy()
-        .astype("string")
-        .rename(
-            columns={
-                "Facility ID": "facility_id",
-                "Pt Exp Group Footnote": "footnote_code",
-            }
-        )
-    )
-    bridge["footnote_code"] = (
-        bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
-    )
-    return bridge
+    return build_bridge_footnote(df, "Pt Exp Group Footnote")
+
 
 def build_bridge_te_footnote(df: pd.DataFrame) -> pd.DataFrame:
-    bridge = (
-        df[["Facility ID", "TE Group Footnote"]]
-        .copy()
+    return build_bridge_footnote(df, "TE Group Footnote")
+
+
+# This function creates a bridge table to link mortality measures with their corresponding footnotes
+# def build_bridge_mort_footnote(df: pd.DataFrame) -> pd.DataFrame:
+#     bridge = (
+#         df[["Facility ID", "MORT Group Footnote"]]
+#         .copy()
+#         .astype("string")
+#         .rename(
+#             columns={
+#                 "Facility ID": "facility_id",
+#                 "MORT Group Footnote": "footnote_code",
+#             }
+#         )
+#     )
+#     bridge["footnote_code"] = (
+#         bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
+#     )
+#     return bridge
+
+# def build_bridge_safety_footnote(df: pd.DataFrame) -> pd.DataFrame:
+#     bridge = (
+#         df[["Facility ID", "Safety Group Footnote"]]
+#         .copy()
+#         .astype("string")
+#         .rename(
+#             columns={
+#                 "Facility ID": "facility_id",
+#                 "Safety Group Footnote": "footnote_code",
+#             }
+#         )
+#     )
+#     bridge["footnote_code"] = (
+#         bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
+#     )
+#     return bridge
+
+# def build_bridge_readm_footnote(df: pd.DataFrame) -> pd.DataFrame:
+#     bridge = (
+#         df[["Facility ID", "READM Group Footnote"]]
+#         .copy()
+#         .astype("string")
+#         .rename(
+#             columns={
+#                 "Facility ID": "facility_id",
+#                 "READM Group Footnote": "footnote_code",
+#             }
+#         )
+#     )
+#     bridge["footnote_code"] = (
+#         bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
+#     )
+#     return bridge
+
+# def build_bridge_ptexp_footnote(df: pd.DataFrame) -> pd.DataFrame:
+#     bridge = (
+#         df[["Facility ID", "Pt Exp Group Footnote"]]
+#         .copy()
+#         .astype("string")
+#         .rename(
+#             columns={
+#                 "Facility ID": "facility_id",
+#                 "Pt Exp Group Footnote": "footnote_code",
+#             }
+#         )
+#     )
+#     bridge["footnote_code"] = (
+#         bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
+#     )
+#     return bridge
+
+
+# def build_bridge_te_footnote(df: pd.DataFrame) -> pd.DataFrame:
+#     bridge = (
+#         df[["Facility ID", "TE Group Footnote"]]
+#         .copy()
+#         .astype("string")
+#         .rename(
+#             columns={
+#                 "Facility ID": "facility_id",
+#                 "TE Group Footnote": "footnote_code",
+#             }
+#         )
+#     )
+#     bridge["footnote_code"] = (
+#         bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
+#     )
+#     return bridge
+def build_dim_footnote(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    df["footnote_code"] = (
+        df["footnote_code"]
         .astype("string")
-        .rename(
-            columns={
-                "Facility ID": "facility_id",
-                "TE Group Footnote": "footnote_code",
-            }
-        )
+        .str.replace(r"\.0$", "", regex=True)
+        .str.strip()
     )
-    bridge["footnote_code"] = (
-        bridge["footnote_code"].str.replace(r"\.0$", "", regex=True).str.strip()
-    )
-    return bridge
+
+    df = df.dropna(subset=["footnote_code"])
+    df = df.drop_duplicates(subset=["footnote_code"])
+
+    return df
+
 
 def attach_footnote_desc(
     bridge: pd.DataFrame, dim_footnote: pd.DataFrame

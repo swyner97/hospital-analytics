@@ -28,8 +28,6 @@ Raw CSV Data → Python ETL → PostgreSQL Staging → dbt Models → Analytics 
 - Python (Pandas)
 - PostgreSQL
 - dbt
-- Docker _(optional)_
-- Airflow _(optional)_
 
 **Analytics & Visualization**
 
@@ -47,6 +45,7 @@ All datasets are publicly available from the Centers for Medicare & Medicaid Ser
 | Hospital Readmissions Reduction Program  | Readmission rates by measure         |
 | Patient Survey (HCAHPS)                  | Patient satisfaction scores          |
 | Medicare Spending Per Beneficiary (MSPB) | Cost per episode of care             |
+| Footnote Crosswalk                       | Look up for footnote summary text    |
 
 ---
 

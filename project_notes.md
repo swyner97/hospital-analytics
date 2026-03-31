@@ -72,25 +72,53 @@
 
 ---
 
-### 6. Facility ID Type Consistency
+### 6. Facility ID Type Consistency _(Updated)_
 
-**Observation:** Facility ID was being cast to `Int64` in readmissions cleaning but `string` in general info cleaning.
+**Original Decision:**
+Facility ID was initially cast to Int64 in some cleaning functions.
 
-**Problem:** Inconsistent types on a join key cause merges to silently fail or produce nulls.
+**Issue Identified:**
+Some Facility IDs may contain non-numeric characters (e.g., 01014F), and casting to integer can either fail or corrupt the data. Additionally, inconsistent typing across tables can cause joins to fail.
 
-**Decision:** Standardized Facility ID to `string` across all cleaning functions. Some IDs contain non-numeric characters (e.g. `01014F`), making integer casting invalid regardless.
+**Revised Decision:**
+Standardized Facility ID to string across all cleaning functions.
 
 ---
 
 ### 7. Footnote Code Join: Float-to-String Casting Issue
 
-**Observation** A bridge table was constructed to link Facility IDs to footnote descriptions via a `footnote_code` key. After casting to string, the merge produced no matches.
+**Observation:** A bridge table was constructed to link Facility IDs to footnote descriptions via a `footnote_code` key. After casting to string, the merge produced no matches.
 
 **Problem** The "MORT Group Footnote" column was read in as float by pandas due to the presence of NaN values (pandas cannot store NaN in integer columns, so it upcasts to float). Casting to string converted codes like 1 into "1.0", which did not match the clean "1" strings in the footnote crosswalk table.
 
 **Decision** Applied `.str.replace(r"\.0$", "", regex=True).str.strip()` to the bridge table's `footnote_code` column after casting, and `.str.strip()` to the footnote table's code column to guard against whitespace.
 
 >> Additional Findings Most hospitals have no footnote code i.e.the "MORT Group Footnote" column is `NaN` for the majority of facilities. This is expected behavior, not a data error. The merge was confirmed working by filtering for rows where `footnote_code` is not null.
+
+### 8. Bridge Table Helper Refactor
+
+**Observation:** The same bridge-table cleaning logic was being repeated for each CMS footnote category.
+
+**Problem:** Repeating the same code across mortality, readmissions, safety, patient experience, and teaching efficiency makes the pipeline harder to maintain and easier to break.
+
+**Decision:** Created one reusable helper function, build_bridge_footnote(df, footnote_col), that handles:
+    - selecting Facility ID and the footnote column
+    - renaming to facility_id and footnote_code
+    - standardizing ID and code types
+    - removing null values
+    - dropping duplicate facility-footnote pairs
+
+**Result** The specific bridge functions now only pass in the correct footnote column name, which makes the code cleaner, shorter, and easier to extend.
+
+### 9. Footnote Description Lookup Standardization
+
+**Observation** The bridge tables needed to be joined to the footnote crosswalk table for human-readable descriptions.
+
+**Problem:** Performing separate manual merges for each bridge table duplicated logic and made the pipeline less consistent.
+
+Decision: Used a shared helper, attach_footnote_desc(), to merge any bridge table with dim_footnote using the footnote_code key.
+
+**Result:** All footnote bridges now follow the same lookup pattern, and the join logic is centralized in one place.
 
 ## Next Steps
 

@@ -90,3 +90,6 @@ def clean_footnotes(df: pd.DataFrame) -> pd.DataFrame:
         .drop_duplicates()
     )
     return footnotes
+
+
+
