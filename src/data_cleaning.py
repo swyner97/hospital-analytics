@@ -37,6 +37,7 @@ def clean_general_info(df: pd.DataFrame) -> pd.DataFrame:
 
     df[mort_cols] = df[mort_cols].apply(pd.to_numeric, errors="coerce")
     df["Facility ID"] = df["Facility ID"].astype("string")
+    df["MORT Group Footnote"] = df["MORT Group Footnote"].astype("string")
     df.dropna(subset=key_cols, inplace=True)
     return df
 
@@ -75,3 +76,17 @@ def clean_readmissions(df: pd.DataFrame) -> pd.DataFrame:
     readmissions["Facility Name"] = readmissions["Facility Name"].astype("string")
 
     return readmissions
+
+# This function cleans the footnotes data and returns a DataFrame with unique footnote codes and their descriptions
+def clean_footnotes(df: pd.DataFrame) -> pd.DataFrame:
+    footnotes = (
+        df.rename(
+            columns={
+                "Footnote": "footnote_code",
+                "Footnote Text": "footnote_description",
+            }
+        )[["footnote_code", "footnote_description"]]
+        .astype("string")
+        .drop_duplicates()
+    )
+    return footnotes

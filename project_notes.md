@@ -82,6 +82,16 @@
 
 ---
 
+### 7. Footnote Code Join: Float-to-String Casting Issue
+
+**Observation** A bridge table was constructed to link Facility IDs to footnote descriptions via a `footnote_code` key. After casting to string, the merge produced no matches.
+
+**Problem** The "MORT Group Footnote" column was read in as float by pandas due to the presence of NaN values (pandas cannot store NaN in integer columns, so it upcasts to float). Casting to string converted codes like 1 into "1.0", which did not match the clean "1" strings in the footnote crosswalk table.
+
+**Decision** Applied `.str.replace(r"\.0$", "", regex=True).str.strip()` to the bridge table's `footnote_code` column after casting, and `.str.strip()` to the footnote table's code column to guard against whitespace.
+
+>> Additional Findings Most hospitals have no footnote code i.e.the "MORT Group Footnote" column is `NaN` for the majority of facilities. This is expected behavior, not a data error. The merge was confirmed working by filtering for rows where `footnote_code` is not null.
+
 ## Next Steps
 
 - Merge with additional CMS datasets (mortality, patient experience)
