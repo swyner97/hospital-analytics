@@ -57,6 +57,31 @@
 
 ---
 
+### 5. Mortality Net Score
+
+**Observation:** The mortality dataset contained raw counts for measures rated Better, Worse, and No Different relative to national benchmarks.
+
+**Problem:** Raw counts are not comparable across hospitals since some hospitals have more measures than others.
+
+**Decision:** Calculated a net score — (Better − Worse) / Total Measures — to normalize performance into a single comparable value per hospital. A positive score indicates more measures performing above the national average; a negative score indicates more performing below.
+
+**Solution breakdown:**
+- Individual rate columns (Better Rate, Worse Rate, No Different Rate) were dropped since they are redundant when the goal is ranking.
+- Net score was rounded to 2 decimal places for readability.
+- Hospitals were sorted descending by net score so the best performers appear first.
+
+---
+
+### 6. Facility ID Type Consistency
+
+**Observation:** Facility ID was being cast to `Int64` in readmissions cleaning but `string` in general info cleaning.
+
+**Problem:** Inconsistent types on a join key cause merges to silently fail or produce nulls.
+
+**Decision:** Standardized Facility ID to `string` across all cleaning functions. Some IDs contain non-numeric characters (e.g. `01014F`), making integer casting invalid regardless.
+
+---
+
 ## Next Steps
 
 - Merge with additional CMS datasets (mortality, patient experience)
