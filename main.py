@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.data_cleaning import clean_footnotes, clean_readmissions, clean_general_info
+from src.data_cleaning import clean_footnotes, clean_readmissions, clean_general_info, clean_ratings
 from src.transformations import (
     aggregate_readmissions,
     aggregate_mortality,
@@ -14,6 +14,7 @@ from src.transformations import (
     build_bridge_safety_footnote,
     build_bridge_te_footnote,
     attach_footnote_desc,
+    pivot_ratings
 )
 
 
@@ -21,11 +22,13 @@ def main():
     # load
     general_info = pd.read_csv("data/raw/hospital_general_info.csv")
     footnote_crosswalk = pd.read_csv("data/raw/footnote_crosswalk.csv")
+    ratings = pd.read_csv("data/raw/HCAHPS_patient_surveys.csv")
 
     # clean
     general_info_clean = clean_general_info(general_info)
     footnote_dim = clean_footnotes(footnote_crosswalk)
     readmissions_clean = clean_readmissions(general_info_clean)
+    pt_ratings_clean = clean_ratings(ratings)
 
     # transform
     aggregated_readmissions = aggregate_readmissions(readmissions_clean)
@@ -34,6 +37,7 @@ def main():
     aggregated_ptexp = aggregate_patient_experience(general_info_clean)
     aggregated_te = aggregate_te(general_info_clean)
     aggregated_rating = aggregate_overall_rating(general_info_clean)
+    pivoted_ratings = pivot_ratings(pt_ratings_clean)
 
     bridge_tables = {
         "mortality": build_bridge_mort_footnote(general_info_clean),
@@ -59,6 +63,7 @@ def main():
     aggregated_ptexp.to_csv("data/processed/fact_patient_experience.csv", index=False)
     aggregated_te.to_csv("data/processed/fact_te.csv", index=False)
     aggregated_rating.to_csv("data/processed/fact_overall_rating.csv", index=False)
+    pivoted_ratings.to_csv("data/processed/pivot_ratings.csv", index=False)
 
     for name, df in bridge_tables.items():
         df.to_csv(f"data/processed/bridge_{name}_footnote.csv", index=False)

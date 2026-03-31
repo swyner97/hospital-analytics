@@ -35,12 +35,43 @@ def clean_general_info(df: pd.DataFrame) -> pd.DataFrame:
         "Count of MORT Measures Worse",
     ]
 
+    safety_cols = [
+        "Safety Group Measure Count",
+        "Count of Facility Safety Measures",
+        "Count of Safety Measures Better",
+        "Count of Safety Measures No Different",
+        "Count of Safety Measures Worse",
+    ]
+
+    te_cols = [ 
+        "TE Group Measure Count",
+        "Count of Facility TE Measures",
+    ]
+
+    ptexp_cols = [
+        "Pt Exp Group Measure Count",
+        "Count of Facility Pt Exp Measures",
+    ]
+
+    df[safety_cols] = df[safety_cols].apply(pd.to_numeric, errors="coerce")
+    df[te_cols] = df[te_cols].apply(pd.to_numeric, errors="coerce")
+    df[ptexp_cols] = df[ptexp_cols].apply(pd.to_numeric, errors="coerce")
     df[mort_cols] = df[mort_cols].apply(pd.to_numeric, errors="coerce")
     df["Facility ID"] = df["Facility ID"].astype("string")
     df["MORT Group Footnote"] = df["MORT Group Footnote"].astype("string")
     df.dropna(subset=key_cols, inplace=True)
     return df
 
+def clean_ratings(df: pd.DataFrame) -> pd.DataFrame:
+    rm_str = ["Not Availale", "Not Applicable"]
+    df = df.replace(rm_str, np.nan)
+    df["Patient Survey Star Rating"] = pd.to_numeric(
+        df["Patient Survey Star Rating"], errors="coerce"
+    )
+    df["HCAHPS Linear Mean Value"] = pd.to_numeric(
+        df["HCAHPS Linear Mean Value"], errors="coerce"
+    )
+    return df
 
 def clean_readmissions(df: pd.DataFrame) -> pd.DataFrame:
     readmission_cols = [
@@ -90,6 +121,3 @@ def clean_footnotes(df: pd.DataFrame) -> pd.DataFrame:
         .drop_duplicates()
     )
     return footnotes
-
-
-

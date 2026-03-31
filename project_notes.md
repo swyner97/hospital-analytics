@@ -120,6 +120,21 @@ Decision: Used a shared helper, attach_footnote_desc(), to merge any bridge tabl
 
 **Result:** All footnote bridges now follow the same lookup pattern, and the join logic is centralized in one place.
 
+## 10. MultiIndex Columns for HCAHPS Patient Experience Data
+**Observation:** The raw HCAHPS dataset contained one row per measure per hospital, with each measure represented as a string ID in the HCAHPS Measure ID column.
+
+**Problem:** The long format made it difficult to compare hospitals across measures and impossible to view a hospital's full performance profile in a single row.
+
+**Decision:** Pivoted the dataset to wide format, one row per hospital and applied a MultiIndex column structure to group related metrics together.
+>> Solution Breakdown:
+
+- Star Ratings and Linear Mean Values were pivoted separately, then concatenated horizontally.
+- A measure_map dictionary was used to translate raw CMS measure IDs (e.g., H_COMP_1_STAR_RATING) into human-readable MultiIndex tuples (e.g., ("Nurse Communication", "Star Rating")).
+- A `make_multiindex()` helper was defined inside `pivot_ratings()` to apply the mapping cleanly and handle the two identifier columns (Facility Name, Facility ID) which carry no sub-level.
+
+
+**Result:** Each hospital occupies one row, with columns grouped by care category and sub-grouped by metric type (Star Rating vs. Linear Mean), making the dataset ready for scoring, ranking, and visualization.
+
 ## Next Steps
 
 - Merge with additional CMS datasets (mortality, patient experience)
