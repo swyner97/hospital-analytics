@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 from src.data_cleaning import clean_footnotes, clean_readmissions, clean_general_info, clean_ratings
 from src.transformations import (
@@ -14,7 +15,8 @@ from src.transformations import (
     build_bridge_safety_footnote,
     build_bridge_te_footnote,
     attach_footnote_desc,
-    pivot_ratings
+    pivot_ratings,
+    pivot_ratings_display
 )
 
 
@@ -22,7 +24,7 @@ def main():
     # load
     general_info = pd.read_csv("data/raw/hospital_general_info.csv")
     footnote_crosswalk = pd.read_csv("data/raw/footnote_crosswalk.csv")
-    ratings = pd.read_csv("data/raw/HCAHPS_patient_surveys.csv")
+    ratings = pd.read_csv("data/raw/HCAHPS_patient_surveys.csv", low_memory=False)
 
     # clean
     general_info_clean = clean_general_info(general_info)
@@ -54,6 +56,8 @@ def main():
     }
 
     # save
+    os.makedirs("data/processed", exist_ok=True)
+
     general_info_clean.to_csv("data/processed/general_info_clean.csv", index=False)
     footnote_dim.to_csv("data/processed/footnote_dim.csv", index=False)
 
@@ -63,7 +67,14 @@ def main():
     aggregated_ptexp.to_csv("data/processed/fact_patient_experience.csv", index=False)
     aggregated_te.to_csv("data/processed/fact_te.csv", index=False)
     aggregated_rating.to_csv("data/processed/fact_overall_rating.csv", index=False)
+
+    pivoted_ratings = pivot_ratings(pt_ratings_clean)          # flat, for data work
+    pivoted_ratings_display = pivot_ratings_display(pivoted_ratings)  # formatted, for Excel
+
     pivoted_ratings.to_csv("data/processed/pivot_ratings.csv", index=False)
+
+    excel_df = pivoted_ratings_display.set_index([("Facility ID", ""), ("Facility Name", "")])
+    excel_df.to_excel("data/processed/pivot_ratings.xlsx", merge_cells=True)
 
     for name, df in bridge_tables.items():
         df.to_csv(f"data/processed/bridge_{name}_footnote.csv", index=False)

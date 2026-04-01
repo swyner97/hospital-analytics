@@ -93,7 +93,7 @@ Standardized Facility ID to string across all cleaning functions.
 
 **Decision** Applied `.str.replace(r"\.0$", "", regex=True).str.strip()` to the bridge table's `footnote_code` column after casting, and `.str.strip()` to the footnote table's code column to guard against whitespace.
 
->> Additional Findings Most hospitals have no footnote code i.e.the "MORT Group Footnote" column is `NaN` for the majority of facilities. This is expected behavior, not a data error. The merge was confirmed working by filtering for rows where `footnote_code` is not null.
+>> Additional Findings Most hospitals have no footnote code i.e. the "MORT Group Footnote" column is `NaN` for the majority of facilities. This is expected behavior, not a data error. The merge was confirmed working by filtering for rows where `footnote_code` is not null.
 
 ### 8. Bridge Table Helper Refactor
 
@@ -116,24 +116,45 @@ Standardized Facility ID to string across all cleaning functions.
 
 **Problem:** Performing separate manual merges for each bridge table duplicated logic and made the pipeline less consistent.
 
-Decision: Used a shared helper, attach_footnote_desc(), to merge any bridge table with dim_footnote using the footnote_code key.
+**Decision:** Used a shared helper, attach_footnote_desc(), to merge any bridge table with dim_footnote using the footnote_code key.
 
 **Result:** All footnote bridges now follow the same lookup pattern, and the join logic is centralized in one place.
 
+---
+
 ## 10. MultiIndex Columns for HCAHPS Patient Experience Data
+
 **Observation:** The raw HCAHPS dataset contained one row per measure per hospital, with each measure represented as a string ID in the HCAHPS Measure ID column.
 
 **Problem:** The long format made it difficult to compare hospitals across measures and impossible to view a hospital's full performance profile in a single row.
 
-**Decision:** Pivoted the dataset to wide format, one row per hospital and applied a MultiIndex column structure to group related metrics together.
+**Decision:** Pivoted the dataset to wide format, one row per hospital, and applied a MultiIndex column structure to group related metrics together.
+
 >> Solution Breakdown:
 
 - Star Ratings and Linear Mean Values were pivoted separately, then concatenated horizontally.
 - A measure_map dictionary was used to translate raw CMS measure IDs (e.g., H_COMP_1_STAR_RATING) into human-readable MultiIndex tuples (e.g., ("Nurse Communication", "Star Rating")).
 - A `make_multiindex()` helper was defined inside `pivot_ratings()` to apply the mapping cleanly and handle the two identifier columns (Facility Name, Facility ID) which carry no sub-level.
-
+- Columns were explicitly reordered by iterating over measure_map so each Star Rating and Linear Mean pair is adjacent, preventing the measure name from being printed twice when the MultiIndex is rendered.
 
 **Result:** Each hospital occupies one row, with columns grouped by care category and sub-grouped by metric type (Star Rating vs. Linear Mean), making the dataset ready for scoring, ranking, and visualization.
+
+---
+
+## 11. Two Versions of the HCAHPS Pivot Table
+
+**Observation:** The two-level column headers (e.g. Cleanliness → Star Rating / Linear Mean) looked great visually, but will cause problems when trying to do further analysis or save the data to a CSV file. pandas also throws an error when saving a two-level header table to Excel without a row index.
+
+**Problem:** Two-level headers are harder to work with day-to-day. Simple things like selecting a column, merging two tables, or loading the file into another tool all become more complicated than they need to be.
+
+**Decision:** Split the work into two separate functions:
+
+- `pivot_ratings()` — saves a simple, flat table with straightforward column names like `cleanliness_star` and `cleanliness_linear`. This is the version used for all data work and is saved as a CSV.
+- `pivot_ratings_display()` — takes that flat table and adds the two-level headers back, but only for the Excel file that is used for viewing and sharing results.
+
+**Result:** The project now produces two output files: a CSV for data work and an Excel file for presentation. All future analysis will use the simple flat CSV, which is much easier to work with.
+
+---
 
 ## Next Steps
 

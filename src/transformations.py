@@ -223,26 +223,73 @@ def pivot_ratings(df: pd.DataFrame) -> pd.DataFrame:
 
     df = pd.concat([star, linear], axis=1).reset_index()
 
-    def make_multiindex(cols):
-        new = []
-        for c in cols:
-            if c == "Facility ID":
-                new.append(("Facility ID", ""))
-            elif c == "Facility Name":
-                new.append(("Facility Name", ""))
-            else:
-                new.append(measure_map.get(c, (c, "")))
-        return pd.MultiIndex.from_tuples(new)
+    # order columns so each star/linear pair is adjacent
+    ordered_cols = ["Facility ID", "Facility Name"]
+    for key in measure_map:
+        if key in df.columns:
+            ordered_cols.append(key)
 
-    df.columns = make_multiindex(df.columns)
+    df = df[ordered_cols]
 
-    df = df[
-        [("Facility ID", ""), ("Facility Name", "")]
-        + [
-            c
-            for c in df.columns
-            if c not in [("Facility ID", ""), ("Facility Name", "")]
-        ]
-    ]
+    # flatten column names into readable snake_case strings
+    def flatten_col(col):
+        if col in ("Facility ID", "Facility Name"):
+            return col
+        measure, sub = measure_map[col]
+        suffix = "star" if "Star" in sub else "linear"
+        return f"{measure.lower().replace(' ', '_')}_{suffix}"
+
+    df.columns = [flatten_col(c) for c in df.columns]
+
+    return df
+
+
+def pivot_ratings_display(df: pd.DataFrame) -> pd.DataFrame:
+    # map flat column names back to (measure, sub-column) tuples for the multiindex
+    col_map = {
+        "cleanliness_star": ("Cleanliness", "Star Rating"),
+        "cleanliness_linear": ("Cleanliness", "Linear Mean"),
+        "nurse_communication_star": ("Nurse Communication", "Star Rating"),
+        "nurse_communication_linear": ("Nurse Communication", "Linear Mean"),
+        "doctor_communication_star": ("Doctor Communication", "Star Rating"),
+        "doctor_communication_linear": ("Doctor Communication", "Linear Mean"),
+        "responsiveness_of_hospital_staff_star": (
+            "Responsiveness of Hospital Staff",
+            "Star Rating",
+        ),
+        "responsiveness_of_hospital_staff_linear": (
+            "Responsiveness of Hospital Staff",
+            "Linear Mean",
+        ),
+        "pain_management_star": ("Pain Management", "Star Rating"),
+        "pain_management_linear": ("Pain Management", "Linear Mean"),
+        "communication_about_medicines_star": (
+            "Communication about Medicines",
+            "Star Rating",
+        ),
+        "communication_about_medicines_linear": (
+            "Communication about Medicines",
+            "Linear Mean",
+        ),
+        "discharge_information_star": ("Discharge Information", "Star Rating"),
+        "discharge_information_linear": ("Discharge Information", "Linear Mean"),
+        "quietness_star": ("Quietness", "Star Rating"),
+        "quietness_linear": ("Quietness", "Linear Mean"),
+        "overall_hospital_rating_star": ("Overall Hospital Rating", "Star Rating"),
+        "overall_hospital_rating_linear": ("Overall Hospital Rating", "Linear Mean"),
+        "recommend_hospital_star": ("Recommend Hospital", "Star Rating"),
+        "recommend_hospital_linear": ("Recommend Hospital", "Linear Mean"),
+    }
+
+    # build multiIndex tuples, leaving facility ID and name as top-level only
+    tuples = []
+    for col in df.columns:
+        if col in ("Facility ID", "Facility Name"):
+            tuples.append((col, ""))
+        else:
+            tuples.append(col_map.get(col, (col, "")))
+
+    df = df.copy()
+    df.columns = pd.MultiIndex.from_tuples(tuples)
 
     return df
